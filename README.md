@@ -53,7 +53,7 @@ $campaign->recordEvent('signup', ['source' => 'inactive_30d']); // counts as a c
 
 `type` is a plain string, so any channel can define its own events. Which types count as conversions is configurable (`conversion_types`).
 
-`visitor_hash` is an **opaque unique-actor id you supply** — a hashed IP+UA for web traffic, a recipient id for email, a device id for push. The package never computes it, so it makes no assumption about the channel; it only uses it for unique counts and to match a conversion back to the actor's earlier event.
+`visitor_hash` is an **opaque unique-actor id you supply** (a hashed IP+UA for web traffic, a recipient id for email, a device id for push). The package never computes it, so it makes no assumption about the channel; it only uses it for unique counts and to match a conversion back to the actor's earlier event.
 
 ## Endpoints
 

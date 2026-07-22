@@ -6,6 +6,8 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Carbon;
+use Whilesmart\Campaigns\Concerns\FormatsResponses;
+use Whilesmart\Campaigns\Concerns\HasMiddlewareHooks;
 use Whilesmart\Campaigns\Http\Requests\RecordEventRequest;
 use Whilesmart\Campaigns\Http\Requests\StoreCampaignRequest;
 use Whilesmart\Campaigns\Http\Requests\UpdateCampaignRequest;
@@ -18,9 +20,13 @@ use Whilesmart\OwnerAccess\Concerns\AuthorizesOwnerController;
 class CampaignController extends Controller
 {
     use AuthorizesOwnerController;
+    use FormatsResponses;
+    use HasMiddlewareHooks;
 
     public function index(Request $request): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.index');
+
         $query = $this->scopeAccessibleOwners(Campaign::query(), $request->user())
             ->withCount('events');
 
@@ -44,52 +50,52 @@ class CampaignController extends Controller
         $campaigns = $query->orderByDesc('updated_at')
             ->paginate((int) $request->input('per_page', 25));
 
-        return response()->json([
-            'success' => true,
-            'data' => CampaignResource::collection($campaigns)->response()->getData(true),
-        ]);
+        $response = $this->success(CampaignResource::collection($campaigns)->response()->getData(true));
+
+        return $this->runAfterHooks($request, $response, 'campaigns.index');
     }
 
     public function store(StoreCampaignRequest $request): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.store');
+
         $campaign = Campaign::create($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'data' => new CampaignResource($campaign),
-        ], 201);
+        $response = $this->success(new CampaignResource($campaign), 'Campaign created', 201);
+
+        return $this->runAfterHooks($request, $response, 'campaigns.store');
     }
 
     public function show(Campaign $campaign, Request $request): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.show');
         $this->authorizeAccessTo($campaign, $request->user());
 
-        return response()->json([
-            'success' => true,
-            'data' => new CampaignResource($campaign->loadCount('events')),
-        ]);
+        $response = $this->success(new CampaignResource($campaign->loadCount('events')));
+
+        return $this->runAfterHooks($request, $response, 'campaigns.show');
     }
 
     public function update(UpdateCampaignRequest $request, Campaign $campaign): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.update');
         $this->authorizeAccessTo($campaign, $request->user());
         $campaign->update($request->validated());
 
-        return response()->json([
-            'success' => true,
-            'data' => new CampaignResource($campaign->fresh()->loadCount('events')),
-        ]);
+        $response = $this->success(new CampaignResource($campaign->fresh()->loadCount('events')), 'Campaign updated');
+
+        return $this->runAfterHooks($request, $response, 'campaigns.update');
     }
 
     public function destroy(Campaign $campaign, Request $request): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.destroy');
         $this->authorizeAccessTo($campaign, $request->user());
         $campaign->delete();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Campaign deleted.',
-        ]);
+        $response = $this->success(null, 'Campaign deleted');
+
+        return $this->runAfterHooks($request, $response, 'campaigns.destroy');
     }
 
     /**
@@ -97,15 +103,15 @@ class CampaignController extends Controller
      */
     public function analytics(Campaign $campaign, Request $request, CampaignAnalytics $analytics): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.analytics');
         $this->authorizeAccessTo($campaign, $request->user());
 
         $from = $request->filled('from') ? Carbon::parse($request->input('from')) : null;
         $to = $request->filled('to') ? Carbon::parse($request->input('to')) : null;
 
-        return response()->json([
-            'success' => true,
-            'data' => $analytics->summary($campaign, $from, $to),
-        ]);
+        $response = $this->success($analytics->summary($campaign, $from, $to));
+
+        return $this->runAfterHooks($request, $response, 'campaigns.analytics');
     }
 
     /**
@@ -113,13 +119,13 @@ class CampaignController extends Controller
      */
     public function recordEvent(RecordEventRequest $request, Campaign $campaign): JsonResponse
     {
+        $request = $this->runBeforeHooks($request, 'campaigns.recordEvent');
         $this->authorizeAccessTo($campaign, $request->user());
 
         $event = $campaign->recordEvent($request->input('type'), $request->safe()->except('type'));
 
-        return response()->json([
-            'success' => true,
-            'data' => new CampaignEventResource($event),
-        ], 201);
+        $response = $this->success(new CampaignEventResource($event), 'Event recorded', 201);
+
+        return $this->runAfterHooks($request, $response, 'campaigns.recordEvent');
     }
 }

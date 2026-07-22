@@ -1,9 +1,19 @@
 <?php
 
+use Whilesmart\Campaigns\ResponseFormatters\DefaultResponseFormatter;
+
 return [
     'register_routes' => env('CAMPAIGNS_REGISTER_ROUTES', true),
     'route_prefix' => env('CAMPAIGNS_ROUTE_PREFIX', 'api'),
     'route_middleware' => ['api', 'auth:sanctum'],
+
+    // Reshape every response envelope without forking. Bind your own class
+    // implementing Whilesmart\Campaigns\Interfaces\ResponseFormatterInterface.
+    'response_formatter' => DefaultResponseFormatter::class,
+
+    // Classes implementing Whilesmart\Campaigns\Interfaces\MiddlewareHookInterface,
+    // run before/after each action to adapt requests and responses to the host.
+    'middleware_hooks' => [],
 
     'campaigns_table' => env('CAMPAIGNS_TABLE', 'campaigns'),
     'campaign_events_table' => env('CAMPAIGN_EVENTS_TABLE', 'campaign_events'),
